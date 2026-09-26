@@ -1,53 +1,17 @@
-import { boolean, date, index, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { boolean, date, integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 
-export const branches = pgTable('branches', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  name: text('name').notNull().unique(),
-  code: text('code').notNull().unique(),
-  address: text('address'),
-  phone: text('phone'),
-  isActive: boolean('is_active').notNull().default(true),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-})
+export const user = pgTable('user', { id: text('id').primaryKey(), name: text('name').notNull(), email: text('email').notNull().unique(), emailVerified: boolean('emailVerified').notNull().default(false), image: text('image'), createdAt: timestamp('createdAt').notNull().defaultNow(), updatedAt: timestamp('updatedAt').notNull().defaultNow() })
+export const session = pgTable('session', { id: text('id').primaryKey(), expiresAt: timestamp('expiresAt').notNull(), token: text('token').notNull().unique(), createdAt: timestamp('createdAt').notNull().defaultNow(), updatedAt: timestamp('updatedAt').notNull().defaultNow(), ipAddress: text('ipAddress'), userAgent: text('userAgent'), userId: text('userId').notNull() })
+export const account = pgTable('account', { id: text('id').primaryKey(), accountId: text('accountId').notNull(), providerId: text('providerId').notNull(), userId: text('userId').notNull(), accessToken: text('accessToken'), refreshToken: text('refreshToken'), idToken: text('idToken'), accessTokenExpiresAt: timestamp('accessTokenExpiresAt'), refreshTokenExpiresAt: timestamp('refreshTokenExpiresAt'), scope: text('scope'), password: text('password'), createdAt: timestamp('createdAt').notNull().defaultNow(), updatedAt: timestamp('updatedAt').notNull().defaultNow() })
+export const verification = pgTable('verification', { id: text('id').primaryKey(), identifier: text('identifier').notNull(), value: text('value').notNull(), expiresAt: timestamp('expiresAt').notNull(), createdAt: timestamp('createdAt').defaultNow(), updatedAt: timestamp('updatedAt').defaultNow() })
 
-export const academicYears = pgTable('academic_years', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  name: text('name').notNull().unique(),
-  startsOn: date('starts_on'),
-  endsOn: date('ends_on'),
-  isCurrent: boolean('is_current').notNull().default(false),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
+export const branches = pgTable('branches', { id: uuid('id').defaultRandom().primaryKey(), name: text('name').notNull().unique(), code: text('code').notNull().unique(), address: text('address'), phone: text('phone'), isActive: boolean('is_active').notNull().default(true), createdAt: timestamp('created_at').notNull().defaultNow(), updatedAt: timestamp('updated_at').notNull().defaultNow() })
+export const academicYears = pgTable('academic_years', { id: uuid('id').defaultRandom().primaryKey(), name: text('name').notNull().unique(), startsOn: date('starts_on'), endsOn: date('ends_on'), isCurrent: boolean('is_current').notNull().default(false), createdAt: timestamp('created_at').notNull().defaultNow() })
+export const students = pgTable('students', { id: uuid('id').defaultRandom().primaryKey(), fullName: text('full_name').notNull(), registrationNumber: text('registration_number').notNull().unique(), seatNumber: text('seat_number'), branchId: uuid('branch_id'), academicYearId: uuid('academic_year_id'), stage: text('stage'), grade: text('grade'), className: text('class_name'), dateOfBirth: date('date_of_birth'), gender: text('gender'), guardianName: text('guardian_name'), guardianPhone: text('guardian_phone'), address: text('address'), status: text('status').notNull().default('active'), notes: text('notes'), createdAt: timestamp('created_at').notNull().defaultNow(), updatedAt: timestamp('updated_at').notNull().defaultNow() })
+export const auditLogs = pgTable('audit_logs', { id: uuid('id').defaultRandom().primaryKey(), action: text('action').notNull(), entityType: text('entity_type').notNull(), entityId: uuid('entity_id'), metadata: jsonb('metadata'), createdAt: timestamp('created_at').notNull().defaultNow() })
 
-export const students = pgTable('students', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  fullName: text('full_name').notNull(),
-  registrationNumber: text('registration_number').notNull().unique(),
-  seatNumber: text('seat_number'),
-  branchId: uuid('branch_id').references(() => branches.id),
-  academicYearId: uuid('academic_year_id').references(() => academicYears.id),
-  stage: text('stage'),
-  grade: text('grade'),
-  className: text('class_name'),
-  dateOfBirth: date('date_of_birth'),
-  gender: text('gender'),
-  guardianName: text('guardian_name'),
-  guardianPhone: text('guardian_phone'),
-  address: text('address'),
-  status: text('status').notNull().default('active'),
-  notes: text('notes'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-}, (table) => ({ nameSearch: index('students_full_name_idx').on(table.fullName) }))
-
-export const auditLogs = pgTable('audit_logs', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  action: text('action').notNull(),
-  entityType: text('entity_type').notNull(),
-  entityId: uuid('entity_id'),
-  metadata: jsonb('metadata'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-})
-
-export const schema = { branches, academicYears, students, auditLogs }
+export const invoices = pgTable('invoices', { id: uuid('id').defaultRandom().primaryKey(), invoiceNumber: text('invoice_number').notNull().unique(), studentId: uuid('student_id'), amount: integer('amount').notNull(), status: text('status').notNull().default('pending'), dueDate: date('due_date'), createdAt: timestamp('created_at').notNull().defaultNow() })
+export const expenses = pgTable('expenses', { id: uuid('id').defaultRandom().primaryKey(), title: text('title').notNull(), amount: integer('amount').notNull(), category: text('category'), expenseDate: date('expense_date'), createdAt: timestamp('created_at').notNull().defaultNow() })
+export const attendance = pgTable('attendance', { id: uuid('id').defaultRandom().primaryKey(), studentId: uuid('student_id').notNull(), attendanceDate: date('attendance_date').notNull(), status: text('status').notNull(), note: text('note') })
+export const employees = pgTable('employees', { id: uuid('id').defaultRandom().primaryKey(), fullName: text('full_name').notNull(), jobTitle: text('job_title'), phone: text('phone'), status: text('status').notNull().default('active'), createdAt: timestamp('created_at').notNull().defaultNow() })
+export const documents = pgTable('documents', { id: uuid('id').defaultRandom().primaryKey(), title: text('title').notNull(), category: text('category'), fileUrl: text('file_url'), createdAt: timestamp('created_at').notNull().defaultNow() })
