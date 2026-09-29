@@ -1,6 +1,8 @@
 import { betterAuth } from 'better-auth'
 import { pool } from '@/lib/db'
 
+if (!process.env.BETTER_AUTH_SECRET) throw new Error('BETTER_AUTH_SECRET is required')
+
 const baseURL = process.env.BETTER_AUTH_URL ??
   (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` :
     process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : process.env.V0_RUNTIME_URL)
