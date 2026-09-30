@@ -1,0 +1,15 @@
+import {db} from "@/db"
+import {students,studentAttendance} from "@/db/schema"
+import {and,desc,eq} from "drizzle-orm"
+import {getSession,branchScope} from "@/lib/auth"
+import {redirect} from "next/navigation"
+import {saveStudentAttendanceAction} from "@/lib/actions/attendance-actions"
+
+export default async function StudentAttendancePage(){
+ const s=await getSession();if(!s)redirect("/login");if(!["admin","student_affairs"].includes(s.role))redirect("/dashboard")
+ const scope=branchScope(s)
+ const rows=scope===null?await db.select({id:students.id,fullName:students.fullName,enrollmentNumber:students.enrollmentNumber,branchId:students.branchId}).from(students).where(eq(students.isArchived,false)).orderBy(students.fullName):await db.select({id:students.id,fullName:students.fullName,enrollmentNumber:students.enrollmentNumber,branchId:students.branchId}).from(students).where(and(eq(students.isArchived,false),eq(students.branchId,scope)))
+ const today=new Date().toISOString().slice(0,10)
+ const records=scope===null?await db.select({id:studentAttendance.id,studentId:studentAttendance.studentId,status:studentAttendance.status,date:studentAttendance.date}).from(studentAttendance).orderBy(desc(studentAttendance.date)):await db.select({id:studentAttendance.id,studentId:studentAttendance.studentId,status:studentAttendance.status,date:studentAttendance.date}).from(studentAttendance).where(eq(studentAttendance.branchId,scope)).orderBy(desc(studentAttendance.date))
+ return <div dir="rtl" className="space-y-5"><div><h1 className="text-xl font-bold">حضور الطلاب</h1><p className="text-sm text-zinc-500">تسجيل حضور أو غياب أو تأخير الطالب.</p></div><form action={saveStudentAttendanceAction} className="grid gap-3 rounded-xl border bg-white p-5 md:grid-cols-4"><select name="studentId" required className="rounded-md border px-3 py-2 text-sm">{rows.map(x=><option key={x.id} value={x.id}>{x.fullName} — {x.enrollmentNumber}</option>)}</select><input name="date" type="date" defaultValue={today} required className="rounded-md border px-3 py-2 text-sm"/><select name="status" className="rounded-md border px-3 py-2 text-sm"><option value="present">حاضر</option><option value="absent">غائب</option><option value="late">متأخر</option><option value="excused">بعذر</option></select><button className="rounded-md bg-zinc-900 px-4 py-2 text-sm text-white">حفظ الحضور</button><input name="notes" placeholder="ملاحظات" className="rounded-md border px-3 py-2 text-sm md:col-span-4"/></form><div className="overflow-x-auto rounded-xl border bg-white"><table className="w-full text-right text-sm"><thead className="border-b bg-zinc-50"><tr><th className="px-4 py-3">التاريخ</th><th className="px-4 py-3">الطالب</th><th className="px-4 py-3">الحالة</th></tr></thead><tbody>{records.slice(0,100).map(r=><tr key={r.id} className="border-b"><td className="px-4 py-3">{r.date}</td><td className="px-4 py-3">{rows.find(x=>x.id===r.studentId)?.fullName??r.studentId}</td><td className="px-4 py-3">{r.status}</td></tr>)}</tbody></table></div></div>
+}
