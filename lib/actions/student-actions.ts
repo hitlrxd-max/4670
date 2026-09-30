@@ -78,6 +78,61 @@ export async function createStudentAction(_prev: StudentActionState, formData: F
   }
 }
 
+export async function updateStudentAction(
+  id: number,
+  _prev: StudentActionState,
+  formData: FormData
+): Promise<StudentActionState> {
+  try {
+    const data = studentSchema.parse(Object.fromEntries(formData.entries()))
+    const session = await validateScope(data.branchId, data.academicYearId)
+    const [existing] = await db.select().from(students).where(eq(students.id, id)).limit(1)
+    if (!existing) return { error: "الطالب غير موجود" }
+    const scope = branchScope(session)
+    if (scope !== null && scope !== existing.branchId) return { error: "لا تملك صلاحية هذا الطالب" }
+
+    const duplicate = await db.select({ id: students.id }).from(students)
+      .where(and(eq(students.enrollmentNumber, data.enrollmentNumber), eq(students.id, id))).limit(1)
+    if (!duplicate.length) {
+      const other = await db.select({ id: students.id }).from(students)
+        .where(eq(students.enrollmentNumber, data.enrollmentNumber)).limit(1)
+      if (other.length) return { error: "رقم القيد مستخدم لطالب آخر" }
+    }
+
+    await db.update(students).set({
+      fullName: data.fullName, enrollmentNumber: data.enrollmentNumber,
+      seatNumber: data.seatNumber || null, branchId: data.branchId, academicYearId: data.academicYearId,
+      stage: data.stage || null, grade: data.grade || null, classroom: data.classroom || null,
+      birthDate: data.birthDate || null, gender: data.gender || null,
+      guardianName: data.guardianName || null, guardianPhone: data.guardianPhone || null,
+      address: data.address || null, notes: data.notes || null, updatedAt: new Date(),
+    }).where(eq(students.id, id))
+
+    if (data.totalFees !== undefined) {
+      const [fee] = await db.select().from(studentFees)
+        .where(and(eq(studentFees.studentId, id), eq(studentFees.academicYearId, data.academicYearId))).limit(1)
+      if (fee) {
+        await db.update(studentFees).set({ totalFees: data.totalFees.toFixed(2), branchId: data.branchId, updatedAt: new Date() }).where(eq(studentFees.id, fee.id))
+      } else {
+        await db.insert(studentFees).values({ studentId: id, academicYearId: data.academicYearId, branchId: data.branchId, totalFees: data.totalFees.toFixed(2) })
+      }
+    }
+
+    await db.insert(auditLogs).values({
+      userId: session.userId, action: "update", entityType: "student", entityId: id,
+      description: `قام ${session.fullName} بتعديل بيانات الطالب ${data.fullName}`,
+    })
+    revalidatePath("/students")
+    revalidatePath(`/students/${id}/edit`)
+    revalidatePath("/dashboard")
+    return { success: "تم تحديث بيانات الطالب" }
+  } catch (err) {
+    if (err instanceof z.ZodError) return { error: err.issues[0]?.message ?? "تحقق من البيانات" }
+    if (err instanceof Error && err.message === "FORBIDDEN") return { error: "لا تملك صلاحية هذا الفرع" }
+    return { error: "تعذر تحديث الطالب" }
+  }
+}
+
 export async function archiveStudentAction(id: number) {
   const session = await requireRole(["admin", "student_affairs"])
   const [student] = await db.select().from(students).where(eq(students.id, id)).limit(1)
