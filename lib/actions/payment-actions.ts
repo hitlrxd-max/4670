@@ -37,8 +37,8 @@ export async function createPaymentAction(_prev: PaymentActionState, formData: F
     const discountRows = await db.select({ amount: discounts.amount }).from(discounts).where(eq(discounts.studentFeeId, fee.id))
     const paymentRows = await db.select({ amount: payments.amount }).from(payments).where(and(eq(payments.studentId, student.id), eq(payments.academicYearId, student.academicYearId), eq(payments.isArchived, false)))
     const totalFees = Number(fee.totalFees)
-    const discountAmount = discountRows.reduce((s,x)=>s+Number(x.amount),0)
-    const paidBefore = paymentRows.reduce((s,x)=>s+Number(x.amount),0)
+    const discountAmount = discountRows.reduce((sum: number, row: { amount: string }) => sum + Number(row.amount), 0)
+    const paidBefore = paymentRows.reduce((sum: number, row: { amount: string }) => sum + Number(row.amount), 0)
     const remainingBefore = Math.max(0, totalFees - discountAmount - paidBefore)
     if (data.amount > remainingBefore) return { error: `قيمة الدفعة أكبر من المتبقي (${remainingBefore.toFixed(2)})` }
 
