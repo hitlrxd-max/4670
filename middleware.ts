@@ -20,7 +20,9 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    const secret = new TextEncoder().encode(process.env.AUTH_SECRET)
+    const secretValue = process.env.AUTH_SECRET || process.env.BETTER_AUTH_SECRET
+    if (!secretValue) throw new Error("AUTH_SECRET or BETTER_AUTH_SECRET is not set.")
+    const secret = new TextEncoder().encode(secretValue)
     await jwtVerify(token, secret)
     return NextResponse.next()
   } catch {
