@@ -6,9 +6,10 @@ const SESSION_COOKIE = "school_session"
 const alg = "HS256"
 
 function getSecret() {
-  const secret = process.env.AUTH_SECRET
+  // Support both names so the app works with the existing Vercel/Neon setup.
+  const secret = process.env.AUTH_SECRET || process.env.BETTER_AUTH_SECRET
   if (!secret) {
-    throw new Error("AUTH_SECRET is not set. Add it to your environment variables.")
+    throw new Error("AUTH_SECRET or BETTER_AUTH_SECRET is not set. Add one to your environment variables.")
   }
   return new TextEncoder().encode(secret)
 }
