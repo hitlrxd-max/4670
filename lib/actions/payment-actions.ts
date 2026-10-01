@@ -34,8 +34,8 @@ export async function createPaymentAction(_prev: PaymentActionState, formData: F
       .where(and(eq(studentFees.studentId, student.id), eq(studentFees.academicYearId, student.academicYearId))).limit(1)
     if (!fee) return { error: "لم يتم تحديد رسوم لهذا الطالب بعد" }
 
-    const discountRows = await db.select({ amount: discounts.amount }).where(eq(discounts.studentFeeId, fee.id))
-    const paymentRows = await db.select({ amount: payments.amount }).where(and(eq(payments.studentId, student.id), eq(payments.academicYearId, student.academicYearId), eq(payments.isArchived, false)))
+    const discountRows = await db.select({ amount: discounts.amount }).from(discounts).where(eq(discounts.studentFeeId, fee.id))
+    const paymentRows = await db.select({ amount: payments.amount }).from(payments).where(and(eq(payments.studentId, student.id), eq(payments.academicYearId, student.academicYearId), eq(payments.isArchived, false)))
     const totalFees = Number(fee.totalFees)
     const discountAmount = discountRows.reduce((s,x)=>s+Number(x.amount),0)
     const paidBefore = paymentRows.reduce((s,x)=>s+Number(x.amount),0)
