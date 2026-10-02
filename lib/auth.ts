@@ -1,15 +1,17 @@
 import "server-only"
 import { SignJWT, jwtVerify } from "jose"
 import { cookies } from "next/headers"
+import { eq } from "drizzle-orm"
+import { db } from "@/db"
+import { users } from "@/db/schema"
 
 const SESSION_COOKIE = "school_session"
 const alg = "HS256"
 
 function getSecret() {
-  // Support both names so the app works with the existing Vercel/Neon setup.
-  const secret = process.env.AUTH_SECRET || process.env.BETTER_AUTH_SECRET
-  if (!secret) {
-    throw new Error("AUTH_SECRET or BETTER_AUTH_SECRET is not set. Add one to your environment variables.")
+  const secret = process.env.BETTER_AUTH_SECRET ?? process.env.AUTH_SECRET
+  if (!secret || secret.length < 32) {
+    throw new Error("BETTER_AUTH_SECRET or AUTH_SECRET must be at least 32 characters.")
   }
   return new TextEncoder().encode(secret)
 }
@@ -33,7 +35,7 @@ export async function createSession(payload: SessionPayload) {
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: process.env.NODE_ENV === "development" ? "none" : "lax",
     path: "/",
     maxAge: 60 * 60 * 8, // 8 hours
   })
@@ -67,7 +69,32 @@ export async function requireAuth(): Promise<SessionPayload> {
   if (!session) {
     throw new Error("UNAUTHENTICATED")
   }
-  return session
+
+  const [user] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      fullName: users.fullName,
+      role: users.role,
+      branchId: users.branchId,
+      isActive: users.isActive,
+    })
+    .from(users)
+    .where(eq(users.id, session.userId))
+    .limit(1)
+
+  if (!user || !user.isActive || user.email !== session.email) {
+    await destroySession()
+    throw new Error("UNAUTHENTICATED")
+  }
+
+  return {
+    userId: user.id,
+    email: user.email,
+    fullName: user.fullName,
+    role: user.role,
+    branchId: user.branchId,
+  }
 }
 
 export async function requireRole(

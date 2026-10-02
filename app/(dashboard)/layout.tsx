@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation"
-import { getSession } from "@/lib/auth"
+import { requireAuth } from "@/lib/auth"
 import { logoutAction } from "@/lib/actions/auth-actions"
 
 const MENU = [
@@ -7,14 +7,13 @@ const MENU = [
   { title: "الطلاب", items: [{ title: "جميع الطلاب", href: "/students" }, { title: "إضافة طالب", href: "/students/new" }, { title: "السنوات الدراسية", href: "/academic-years" }] },
   { title: "المالية", items: [{ title: "الأقساط", href: "/finance/fees" }, { title: "المدفوعات", href: "/finance/payments" }, { title: "الفواتير", href: "/finance/invoices" }, { title: "الخصومات", href: "/finance/discounts" }, { title: "المصروفات", href: "/finance/expenses" }, { title: "تصنيفات المصروفات", href: "/finance/expense-categories" }, { title: "المخزون والجرد", href: "/finance/inventory" }, { title: "التقارير", href: "/finance/reports" }] },
   { title: "الحضور", items: [{ title: "حضور الطلاب", href: "/attendance/students" }, { title: "تقارير الغياب", href: "/attendance/reports" }, { title: "حضور الموظفين", href: "/attendance/employees" }] },
-  { title: "الموظفون", items: [{ title: "الموظفون", href: "/hr/employees" }, { title: "المعلمون", href: "/hr/teachers" }, { title: "المواد", href: "/hr/subjects" }, { title: "الفصول", href: "/hr/classes" }, { title: "الجداول", href: "/hr/schedules" }, { title: "العقود", href: "/hr/contracts" }, { title: "المستندات", href: "/hr/documents" }] },
+  { title: "الموظفون", items: [{ title: "الموظفون", href: "/hr/employees" }, { title: "العقود", href: "/hr/contracts" }, { title: "المستندات", href: "/hr/documents" }] },
   { title: "الأرشيف", items: [{ title: "الصادر", href: "/archive/outgoing" }, { title: "الوارد", href: "/archive/incoming" }, { title: "القرارات", href: "/archive/decisions" }, { title: "المراسلات", href: "/archive/correspondence" }, { title: "البحث", href: "/archive/search" }] },
   { title: "الإدارة", items: [{ title: "الفروع", href: "/branches" }, { title: "المستخدمون والحسابات", href: "/users" }, { title: "الصلاحيات", href: "/permissions" }, { title: "الإعدادات", href: "/settings" }] },
 ]
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const session = await getSession()
-  if (!session) redirect("/login")
+  const session = await requireAuth()
   const scopeLabel = session.branchId ? "فرع #" + session.branchId : "كل الفروع"
   return <div dir="rtl" className="flex min-h-screen bg-zinc-50">
     <aside className="hidden w-64 shrink-0 border-l border-zinc-200 bg-white p-4 md:block">
