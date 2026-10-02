@@ -10,13 +10,12 @@ CREATE TABLE "inventory_items" (
   "quantity" numeric(12, 2) DEFAULT '0' NOT NULL,
   "minimum_quantity" numeric(12, 2) DEFAULT '0' NOT NULL,
   "unit_cost" numeric(12, 2),
-  "branch_id" integer NOT NULL,
-  "created_by" integer,
+  "branch_id" uuid NOT NULL,
+  "created_by" uuid,
   "is_archived" boolean DEFAULT false NOT NULL,
   "created_at" timestamp DEFAULT now() NOT NULL,
   "updated_at" timestamp DEFAULT now() NOT NULL,
   CONSTRAINT "inventory_items_branch_fk" FOREIGN KEY ("branch_id") REFERENCES "public"."branches"("id"),
-  CONSTRAINT "inventory_items_created_by_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id"),
   CONSTRAINT "inventory_items_quantity_check" CHECK ("quantity" >= 0),
   CONSTRAINT "inventory_items_minimum_quantity_check" CHECK ("minimum_quantity" >= 0),
   CONSTRAINT "inventory_items_unit_cost_check" CHECK ("unit_cost" IS NULL OR "unit_cost" >= 0)
@@ -37,7 +36,6 @@ CREATE TABLE "inventory_transactions" (
   "created_at" timestamp DEFAULT now() NOT NULL,
   CONSTRAINT "inventory_transactions_item_fk" FOREIGN KEY ("item_id") REFERENCES "public"."inventory_items"("id"),
   CONSTRAINT "inventory_transactions_branch_fk" FOREIGN KEY ("branch_id") REFERENCES "public"."branches"("id"),
-  CONSTRAINT "inventory_transactions_created_by_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id"),
   CONSTRAINT "inventory_transactions_quantity_check" CHECK ("quantity" > 0)
 );
 CREATE INDEX "inventory_transactions_item_date_idx" ON "inventory_transactions" USING btree ("item_id", "transaction_date");
@@ -45,7 +43,7 @@ CREATE INDEX "inventory_transactions_branch_idx" ON "inventory_transactions" USI
 
 CREATE TABLE "employee_contracts" (
   "id" serial PRIMARY KEY NOT NULL,
-  "employee_id" integer NOT NULL,
+  "employee_id" uuid NOT NULL,
   "branch_id" integer NOT NULL,
   "contract_number" varchar(100) NOT NULL,
   "contract_type" varchar(100) NOT NULL,
