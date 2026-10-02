@@ -8,6 +8,13 @@
       "when": 1790440958762,
       "tag": "0000_dazzling_domino",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790901600000,
+      "tag": "0002_management_completion",
+      "breakpoints": true
     }
   ]
 }
