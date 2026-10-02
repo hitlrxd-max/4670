@@ -9,9 +9,25 @@ export default function LoginPage() {
   const [state, formAction, isPending] = useActionState(loginAction, initialState)
 
   return (
-    <main dir="rtl" className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
-      <div className="w-full max-w-sm rounded-xl border border-zinc-200 bg-white p-8 shadow-sm">
-        <h1 className="mb-1 text-center text-xl font-bold text-zinc-900">
+    <main dir="rtl" className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-950 px-4 py-8">
+      {/* Full-screen login background video */}
+      <video
+        className="absolute inset-0 h-full w-full object-cover"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        aria-hidden="true"
+      >
+        <source src="/login-bg.mp4" type="video/mp4" />
+      </video>
+
+      {/* Readability overlay */}
+      <div className="absolute inset-0 bg-black/45" aria-hidden="true" />
+
+      <div className="relative z-10 w-full max-w-sm rounded-2xl border border-white/30 bg-white/90 p-8 shadow-2xl backdrop-blur-md sm:max-w-md">
+        <h1 className="mb-1 text-center text-2xl font-bold text-zinc-900">
           نظام إدارة المدرسة
         </h1>
         <p className="mb-6 text-center text-sm text-zinc-500">تسجيل الدخول للمتابعة</p>
@@ -27,7 +43,7 @@ export default function LoginPage() {
               type="email"
               required
               autoComplete="email"
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="w-full rounded-md border border-zinc-300 bg-white/95 px-3 py-3 text-sm outline-none transition focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200"
               placeholder="admin@school.com"
             />
           </div>
@@ -42,7 +58,7 @@ export default function LoginPage() {
               type="password"
               required
               autoComplete="current-password"
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="w-full rounded-md border border-zinc-300 bg-white/95 px-3 py-3 text-sm outline-none transition focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200"
               placeholder="••••••••"
             />
           </div>
@@ -54,7 +70,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isPending}
-            className="w-full rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
+            className="w-full rounded-md bg-zinc-900 px-3 py-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isPending ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
           </button>
