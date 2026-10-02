@@ -1,0 +1,18 @@
+import { db } from "@/db"
+import { archiveDocuments, branches } from "@/db/schema"
+import { and, desc, eq } from "drizzle-orm"
+import { requireRole, branchScope } from "@/lib/auth"
+import { createArchiveDocumentAction, archiveArchiveDocumentAction } from "@/lib/actions/archive-actions"
+import { redirect } from "next/navigation"
+
+export default async function ArchivePage({direction,title}:{direction:"incoming"|"outgoing";title:string}){
+ const s=await requireRole(["admin","archive"]).catch(()=>null);if(!s)redirect("/dashboard");const scope=branchScope(s)
+ const [rows,bs]=await Promise.all([
+  scope===null?db.select({id:archiveDocuments.id,docNumber:archiveDocuments.docNumber,docDate:archiveDocuments.docDate,entity:archiveDocuments.entity,subject:archiveDocuments.subject,branch:branches.name}).from(archiveDocuments).leftJoin(branches,eq(archiveDocuments.branchId,branches.id)).where(and(eq(archiveDocuments.direction,direction),eq(archiveDocuments.isArchived,false))).orderBy(desc(archiveDocuments.docDate))
+  :db.select({id:archiveDocuments.id,docNumber:archiveDocuments.docNumber,docDate:archiveDocuments.docDate,entity:archiveDocuments.entity,subject:archiveDocuments.subject,branch:branches.name}).from(archiveDocuments).leftJoin(branches,eq(archiveDocuments.branchId,branches.id)).where(and(eq(archiveDocuments.direction,direction),eq(archiveDocuments.isArchived,false),eq(archiveDocuments.branchId,scope))).orderBy(desc(archiveDocuments.docDate)),
+  scope===null?db.select({id:branches.id,name:branches.name}).from(branches).where(eq(branches.status,"active")):db.select({id:branches.id,name:branches.name}).from(branches).where(eq(branches.id,scope))
+ ])
+ return <div dir="rtl" className="space-y-6"><div><h1 className="text-xl font-bold">{title}</h1><p className="text-sm text-zinc-500">تسجيل وأرشفة المكاتبات حسب الفرع.</p></div>
+ <form action={createArchiveDocumentAction} className="grid gap-3 rounded-xl border bg-white p-4 md:grid-cols-6"><input type="hidden" name="direction" value={direction}/><input name="docNumber" required placeholder="رقم المستند" className="rounded-md border px-3 py-2 text-sm"/><input type="date" name="docDate" required className="rounded-md border px-3 py-2 text-sm"/><input name="entity" required placeholder="الجهة" className="rounded-md border px-3 py-2 text-sm"/><input name="subject" required placeholder="الموضوع" className="rounded-md border px-3 py-2 text-sm"/><select name="branchId" required className="rounded-md border px-3 py-2 text-sm">{bs.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select><input name="description" placeholder="الوصف" className="rounded-md border px-3 py-2 text-sm"/><button className="rounded-md bg-zinc-900 px-4 py-2 text-sm text-white md:col-span-6">حفظ {title}</button></form>
+ <div className="overflow-x-auto rounded-xl border bg-white"><table className="w-full min-w-[850px] text-right text-sm"><thead className="border-b bg-zinc-50"><tr><th className="px-4 py-3">الرقم</th><th className="px-4 py-3">التاريخ</th><th className="px-4 py-3">الجهة</th><th className="px-4 py-3">الموضوع</th><th className="px-4 py-3">الفرع</th><th className="px-4 py-3">إجراء</th></tr></thead><tbody>{rows.map(r=><tr key={r.id} className="border-b"><td className="px-4 py-3">{r.docNumber}</td><td className="px-4 py-3">{r.docDate}</td><td className="px-4 py-3">{r.entity}</td><td className="px-4 py-3 font-medium">{r.subject}</td><td className="px-4 py-3">{r.branch??"—"}</td><td className="px-4 py-3"><form action={archiveArchiveDocumentAction}><input type="hidden" name="id" value={r.id}/><button className="rounded border px-2 py-1 text-xs">أرشفة</button></form></td></tr>)}</tbody></table></div></div>
+}
