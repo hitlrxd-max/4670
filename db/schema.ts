@@ -11,6 +11,7 @@ import {
   date,
   time,
   uniqueIndex,
+  index,
 } from "drizzle-orm/pg-core"
 import { relations } from "drizzle-orm"
 
@@ -403,6 +404,80 @@ export const correspondence = pgTable("correspondence", {
   isArchived: boolean("is_archived").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 })
+
+// ============================================================
+// PHASE 8: INVENTORY & EMPLOYEE CONTRACTS
+// ============================================================
+
+export const inventoryItems = pgTable(
+  "inventory_items",
+  {
+    id: serial("id").primaryKey(),
+    name: varchar("name", { length: 255 }).notNull(),
+    code: varchar("code", { length: 100 }).notNull(),
+    category: varchar("category", { length: 150 }),
+    unit: varchar("unit", { length: 50 }).notNull(),
+    quantity: numeric("quantity", { precision: 12, scale: 2 }).notNull().default("0"),
+    minimumQuantity: numeric("minimum_quantity", { precision: 12, scale: 2 }).notNull().default("0"),
+    unitCost: numeric("unit_cost", { precision: 12, scale: 2 }),
+    branchId: integer("branch_id").references(() => branches.id).notNull(),
+    createdBy: integer("created_by").references(() => users.id),
+    isArchived: boolean("is_archived").notNull().default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    codeBranchIdx: uniqueIndex("inventory_items_code_branch_idx").on(table.code, table.branchId),
+    branchIdx: index("inventory_items_branch_idx").on(table.branchId),
+  })
+)
+
+export const inventoryTransactionTypeEnum = pgEnum("inventory_transaction_type", ["in", "out"])
+
+export const inventoryTransactions = pgTable(
+  "inventory_transactions",
+  {
+    id: serial("id").primaryKey(),
+    itemId: integer("item_id").references(() => inventoryItems.id).notNull(),
+    branchId: integer("branch_id").references(() => branches.id).notNull(),
+    type: inventoryTransactionTypeEnum("type").notNull(),
+    quantity: numeric("quantity", { precision: 12, scale: 2 }).notNull(),
+    transactionDate: date("transaction_date").notNull(),
+    reference: varchar("reference", { length: 255 }),
+    notes: text("notes"),
+    createdBy: integer("created_by").references(() => users.id),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    itemDateIdx: index("inventory_transactions_item_date_idx").on(table.itemId, table.transactionDate),
+    branchIdx: index("inventory_transactions_branch_idx").on(table.branchId),
+  })
+)
+
+export const employeeContractStatusEnum = pgEnum("employee_contract_status", ["active", "expired", "cancelled"])
+
+export const employeeContracts = pgTable(
+  "employee_contracts",
+  {
+    id: serial("id").primaryKey(),
+    employeeId: integer("employee_id").references(() => employees.id).notNull(),
+    branchId: integer("branch_id").references(() => branches.id).notNull(),
+    contractNumber: varchar("contract_number", { length: 100 }).notNull(),
+    contractType: varchar("contract_type", { length: 100 }).notNull(),
+    startDate: date("start_date").notNull(),
+    endDate: date("end_date"),
+    salary: numeric("salary", { precision: 12, scale: 2 }),
+    notes: text("notes"),
+    status: employeeContractStatusEnum("status").notNull().default("active"),
+    createdBy: integer("created_by").references(() => users.id),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    contractNumberIdx: uniqueIndex("employee_contracts_number_branch_idx").on(table.contractNumber, table.branchId),
+    branchIdx: index("employee_contracts_branch_idx").on(table.branchId),
+  })
+)
 
 // ============================================================
 // RELATIONS
